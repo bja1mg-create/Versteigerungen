@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Immobilien aus Zwangsversteigerungen</h1>
+
+{% include "_filter.html" %}
+
+<p class="count">{{ objekte|length }} Objekt{% if objekte|length != 1 %}e{% endif %} gefunden</p>
+
+<div class="grid">
+  {% for o in objekte %}
+  <a class="card" href="/objekt/{{ o.id }}">
+    <div class="card-top">
+      <span class="tag">{{ o.objektart or "Liegenschaft" }}</span>
+      <span class="muted">{{ o.bundesland or "" }}</span>
+    </div>
+    <h2>{{ o.titel or o.objektart or "Liegenschaft" }}</h2>
+    <p class="muted">{{ [o.adresse, [o.plz, o.ort]|select|join(" ")]|select|join(", ") or "Ort unbekannt" }}</p>
+    <dl>
+      <dt>Schätzwert</dt><dd>{{ o.schaetzwert|eur }}</dd>
+      <dt>Geringstes Gebot</dt><dd>{{ o.geringstes_gebot|eur }}</dd>
+      {% if o.flaeche %}<dt>Objektgröße</dt><dd>{{ o.flaeche|m2 }}</dd>
+      {% elif o.grundflaeche %}<dt>Grundstück</dt><dd>{{ o.grundflaeche|m2 }}</dd>{% endif %}
+      <dt>Termin</dt><dd>{{ o.termin|datum }}</dd>
+    </dl>
+  </a>
+  {% else %}
+  <p>Keine Objekte gefunden. Filter anpassen oder zurücksetzen.</p>
+  {% endfor %}
+</div>
+{% endblock %}

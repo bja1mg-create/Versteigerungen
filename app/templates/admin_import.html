@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Import – {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<p><a href="/admin">← Übersicht</a></p>
+<h1>Edikte importieren</h1>
+
+{% if fehler %}<p class="note error">{{ fehler }}</p>{% endif %}
+
+<form method="post" action="/admin/import" class="paste">
+  <label>Ergebnisliste oder Links aus der Ediktsdatei einfügen (eine oder mehrere Zeilen).
+    Jedes Edikt wird abgerufen und neu angelegt bzw. aktualisiert (ca. 1–2 Sekunden pro Edikt):
+    <textarea name="text" rows="10">{{ text }}</textarea>
+  </label>
+  <button type="submit">Importieren</button>
+</form>
+
+{% if results %}
+<h2>Ergebnis</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Status</th><th>Objekt</th></tr></thead>
+  <tbody>
+  {% for edikt_id, status, info in results %}
+  <tr><td class="{{ 'danger' if status == 'Fehler' }}">{{ status }}</td><td>{{ info }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="note">Bitte Einträge kurz prüfen – insbesondere Bundesland (aus PLZ abgeleitet) und Beschreibung.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Impressum</h1>
+{% if IMPRESSUM %}
+<p class="pre">{{ IMPRESSUM }}</p>
+{% else %}
+<p class="note">Noch kein Impressum hinterlegt. Umgebungsvariable <code>IMPRESSUM</code> setzen
+  (Name, Anschrift, Kontakt – Pflicht nach § 5 ECG / § 25 MedienG).</p>
+{% endif %}
+
+<h2>Datenschutz</h2>
+<p>Diese Website setzt keine Cookies und kein Tracking ein. Es werden keine personenbezogenen Daten
+  von Verpflichteten veröffentlicht; angezeigt werden nur objektbezogene Angaben aus öffentlich
+  bekanntgemachten Versteigerungsedikten.</p>
+<p>Die Kartenansicht lädt Kartenkacheln von OpenStreetMap (OpenStreetMap Foundation, UK).
+  Dabei wird Ihre IP-Adresse an deren Server übermittelt. Kartendaten &copy; OpenStreetMap-Mitwirkende, ODbL.</p>
+
+<h2>Quelle</h2>
+<p>Die Daten stammen aus der <a href="https://edikte.justiz.gv.at" target="_blank" rel="noopener">Ediktsdatei der österreichischen Justiz</a>.
+  Alle Angaben ohne Gewähr.</p>
+{% endblock %}

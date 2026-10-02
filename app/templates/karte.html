@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Karte – {{ SITE_NAME }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/leaflet/leaflet.css">{% endblock %}
+{% block content %}
+<h1>Immobilien aus Zwangsversteigerungen</h1>
+
+{% include "_filter.html" %}
+
+<p class="count">{{ punkte|length }} Objekt{% if punkte|length != 1 %}e{% endif %} auf der Karte
+  {% if ohne_position %}· {{ ohne_position }} ohne Kartenposition (<a href="/{{ '?' ~ query if query }}">in der Liste</a>){% endif %}</p>
+
+<div id="map" class="map map-large" aria-label="Karte der Versteigerungsobjekte"></div>
+<p class="muted small">Blasse Marker = ungefähre Lage (nur Ort bekannt).</p>
+
+<script src="/static/leaflet/leaflet.js"></script>
+<script>
+  const punkte = {{ punkte|tojson }};
+  const map = L.map("map", { scrollWheelZoom: false });
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
+  }).addTo(map);
+  map.on("focus", () => map.scrollWheelZoom.enable());
+
+  // Mehrere Objekte an derselben Adresse -> ein Marker mit allen Objekten im Popup.
+  const gruppen = new Map();
+  for (const p of punkte) {
+    const key = p.lat.toFixed(5) + "," + p.lon.toFixed(5);
+    if (!gruppen.has(key)) gruppen.set(key, []);
+    gruppen.get(key).push(p);
+  }
+
+  function el(tag, text, cls) {
+    const e = document.createElement(tag);
+    if (text) e.textContent = text;
+    if (cls) e.className = cls;
+    return e;
+  }
+
+  function popup(liste) {
+    const box = el("div", null, "popup");
+    for (const p of liste) {
+      const item = el("div", null, "popup-item");
+      const a = el("a", p.titel);
+      a.href = "/objekt/" + p.id;
+      item.append(el("strong")); item.firstChild.append(a);
+      item.append(el("div", [p.adresse, p.ort].filter(Boolean).join(", "), "muted"));
+      item.append(el("div", "Schätzwert " + p.schaetzwert + " · Gebot ab " + p.gebot));
+      item.append(el("div", "Termin: " + p.termin));
+      if (!p.genau) item.append(el("div", "Ungefähre Lage (nur Ort bekannt)", "muted"));
+      box.append(item);
+    }
+    return box;
+  }
+
+  const bounds = [];
+  for (const liste of gruppen.values()) {
+    const { lat, lon } = liste[0];
+    const genau = liste.some(p => p.genau);
+    const marker = L.marker([lat, lon], { opacity: genau ? 1 : 0.55, title: liste.map(p => p.titel).join(" · ") });
+    if (liste.length > 1) {
+      marker.bindTooltip(String(liste.length), { permanent: true, direction: "top", offset: [0, -30], className: "count-badge" });
+    }
+    marker.bindPopup(() => popup(liste), { maxWidth: 300 }).addTo(map);
+    bounds.push([lat, lon]);
+  }
+
+  if (bounds.length) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+  else map.setView([47.6, 13.8], 7); // Österreich
+</script>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ o.titel or o.objektart or "Liegenschaft" }} in {{ o.ort or "" }} – {{ SITE_NAME }}{% endblock %}
+{% block head %}{% if o.lat is not none %}<link rel="stylesheet" href="/static/leaflet/leaflet.css">{% endif %}{% endblock %}
+{% block content %}
+<p><a href="javascript:history.back()">← zurück</a></p>
+<p class="muted"><span class="tag">{{ o.objektart or "Liegenschaft" }}</span></p>
+<h1>{{ o.titel or o.objektart or "Liegenschaft" }}</h1>
+<p class="muted">{{ [o.adresse, [o.plz, o.ort]|select|join(" ")]|select|join(", ") }}{% if o.bundesland %} · {{ o.bundesland }}{% endif %}</p>
+
+<div class="detail">
+  <dl class="facts">
+    <dt>Versteigerungstermin</dt><dd>{{ o.termin|datum }}</dd>
+    {% if o.termin_ort %}<dt>Ort der Versteigerung</dt><dd>{{ o.termin_ort }}</dd>{% endif %}
+    <dt>Schätzwert</dt><dd>{{ o.schaetzwert|eur }}</dd>
+    <dt>Geringstes Gebot</dt><dd>{{ o.geringstes_gebot|eur }}</dd>
+    {% if o.vadium %}<dt>Vadium</dt><dd>{{ o.vadium|eur }}</dd>{% endif %}
+    {% if o.flaeche %}<dt>Objektgröße</dt><dd>{{ o.flaeche|m2 }}</dd>{% endif %}
+    {% if o.grundflaeche %}<dt>Grundstücksgröße</dt><dd>{{ o.grundflaeche|m2 }}</dd>{% endif %}
+    <dt>Gericht</dt><dd>{{ o.gericht or "–" }}</dd>
+    <dt>Aktenzeichen</dt><dd>{{ o.aktenzeichen }}</dd>
+    {% if o.bekannt_gemacht %}<dt>Bekannt gemacht</dt><dd>{{ o.bekannt_gemacht|datum }}</dd>{% endif %}
+  </dl>
+
+  {% if o.lat is not none and o.lon is not none %}
+  <section>
+    <h2>Lage</h2>
+    <div id="map" class="map" aria-label="Lage des Objekts"></div>
+    {% if not o.geo_genau %}<p class="muted small">Ungefähre Lage – genaue Adresse war nicht auffindbar.</p>{% endif %}
+  </section>
+  {% endif %}
+
+  {% if o.beschreibung %}
+  <section>
+    <h2>Beschreibung</h2>
+    <p class="pre">{{ o.beschreibung }}</p>
+  </section>
+  {% endif %}
+
+  <p class="buttons">
+    {% if o.edikt_url %}<a class="button" href="{{ o.edikt_url }}" target="_blank" rel="noopener">Originales Edikt mit Fotos, Plänen &amp; Gutachten</a>{% endif %}
+  </p>
+  <p class="note">Maßgeblich ist ausschließlich das Edikt in der Ediktsdatei. Termine können abberaumt werden – bitte vor der Versteigerung dort prüfen.</p>
+</div>
+
+{% if o.lat is not none and o.lon is not none %}
+<script src="/static/leaflet/leaflet.js"></script>
+<script>
+  const pos = [{{ o.lat }}, {{ o.lon }}];
+  const map = L.map("map", { scrollWheelZoom: false }).setView(pos, {{ 16 if o.geo_genau else 13 }});
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
+  }).addTo(map);
+  L.marker(pos, { opacity: {{ 1 if o.geo_genau else 0.55 }} }).addTo(map);
+</script>
+{% endif %}
+{% endblock %}

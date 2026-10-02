@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="/">{{ SITE_NAME }}</a>
+      <nav><a href="/">Angebote</a><a href="/karte">Karte</a><a href="/impressum">Impressum</a></nav>
+    </div>
+  </header>
+  <main class="wrap">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>Alle Angaben ohne Gewähr. Rechtlich maßgeblich ist ausschließlich das Edikt in der
+        <a href="https://edikte.justiz.gv.at" rel="noopener" target="_blank">Ediktsdatei der Justiz</a>.
+        Diese Seite ist kein Angebot der Justiz.</p>
+      <p><a href="/impressum">Impressum &amp; Datenschutz</a></p>
+    </div>
+  </footer>
+</body>
+</html>

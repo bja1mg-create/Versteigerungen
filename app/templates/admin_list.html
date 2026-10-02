@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Admin – {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<h1>Verwaltung</h1>
+{% if meldung %}<p class="note">{{ meldung }}</p>{% endif %}
+<div class="buttons">
+  <a class="button" href="/admin/import">Edikte importieren</a>
+  <a class="button secondary" href="/admin/neu">+ Manuell anlegen</a>
+  {% if ohne_koordinaten %}
+  <form method="post" action="/admin/geocode">
+    <button class="secondary" type="submit">{{ ohne_koordinaten }} Objekt(e) ohne Kartenposition verorten</button>
+  </form>
+  {% endif %}
+</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Termin</th><th>Aktenzeichen</th><th>Ort</th><th>Objektart</th><th>Schätzwert</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for o in objekte %}
+  <tr>
+    <td>{{ o.termin|datum }}</td>
+    <td>{{ o.aktenzeichen }}</td>
+    <td>{{ [o.plz, o.ort]|select|join(" ") }}</td>
+    <td>{{ o.titel or o.objektart or "" }}</td>
+    <td>{{ o.schaetzwert|eur }}</td>
+    <td>{{ "aktiv" if o.aktiv else "versteckt" }}{% if o.lat is none %} · <span class="danger">keine Karte</span>{% elif not o.geo_genau %} · Lage ungefähr{% endif %}</td>
+    <td class="row-actions">
+      <a href="/admin/{{ o.id }}">Bearbeiten</a>
+      <form method="post" action="/admin/{{ o.id }}/loeschen" onsubmit="return window.confirm('Wirklich löschen?')">
+        <button class="link danger" type="submit">Löschen</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="7">Noch keine Objekte.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

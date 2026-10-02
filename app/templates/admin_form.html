@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Objekt bearbeiten – {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<p><a href="/admin">← Übersicht</a></p>
+<h1>{% if o.id %}Objekt bearbeiten{% else %}Neues Objekt{% endif %}</h1>
+
+{% if hinweis %}<p class="note">{{ hinweis }}</p>{% endif %}
+{% if fehler %}<p class="note error">{{ fehler }}</p>{% endif %}
+
+<form method="post" action="/admin/parse" class="paste">
+  <input type="hidden" name="objekt_id" value="{{ o.id or '' }}">
+  <label>Edikt-Text einfügen (von edikte.justiz.gv.at kopieren) – füllt die Felder unten automatisch vor:
+    <textarea name="rohtext" rows="6">{{ rohtext }}</textarea>
+  </label>
+  <button type="submit">Text auslesen</button>
+</form>
+
+<form method="post" action="/admin/speichern" class="edit">
+  <input type="hidden" name="id" value="{{ o.id or '' }}">
+  <input type="hidden" name="edikt_id" value="{{ o.edikt_id or '' }}">
+  <input type="hidden" name="bekannt_gemacht" value="{{ o.bekannt_gemacht or '' }}">
+  <label>Aktenzeichen *<input name="aktenzeichen" value="{{ o.aktenzeichen or '' }}" required></label>
+  <label>Gericht<input name="gericht" value="{{ o.gericht or '' }}"></label>
+  <label class="span-2">Titel (z. B. „Doppelwohnhaushälfte“)<input name="titel" value="{{ o.titel or '' }}"></label>
+  <label>Bundesland
+    <select name="bundesland"><option value=""></option>
+      {% for b in BUNDESLAENDER %}<option {% if o.bundesland == b %}selected{% endif %}>{{ b }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Objektart (Kategorie)
+    <input name="objektart" list="objektarten" value="{{ o.objektart or '' }}">
+    <datalist id="objektarten">{% for x in OBJEKTARTEN %}<option value="{{ x }}">{% endfor %}</datalist>
+  </label>
+  <label>PLZ<input name="plz" value="{{ o.plz or '' }}"></label>
+  <label>Ort<input name="ort" value="{{ o.ort or '' }}"></label>
+  <label class="span-2">Adresse (Straße, Nr.)<input name="adresse" value="{{ o.adresse or '' }}"></label>
+  <label>Objektgröße (m²)<input name="flaeche" value="{{ o.flaeche if o.flaeche is not none else '' }}"></label>
+  <label>Grundstücksgröße (m²)<input name="grundflaeche" value="{{ o.grundflaeche if o.grundflaeche is not none else '' }}"></label>
+  <label>Schätzwert (€)<input name="schaetzwert" value="{{ o.schaetzwert if o.schaetzwert is not none else '' }}"></label>
+  <label>Geringstes Gebot (€)<input name="geringstes_gebot" value="{{ o.geringstes_gebot if o.geringstes_gebot is not none else '' }}"></label>
+  <label>Vadium (€)<input name="vadium" value="{{ o.vadium if o.vadium is not none else '' }}"></label>
+  <label>Versteigerungstermin<input type="datetime-local" name="termin" value="{{ o.termin or '' }}"></label>
+  <label class="span-2">Ort der Versteigerung<input name="termin_ort" value="{{ o.termin_ort or '' }}"></label>
+  <label>Breitengrad (lat)<input name="lat" value="{{ o.lat if o.lat is not none else '' }}" placeholder="z. B. 47.0707"></label>
+  <label>Längengrad (lon)<input name="lon" value="{{ o.lon if o.lon is not none else '' }}" placeholder="z. B. 15.4395"></label>
+  <label class="check span-2"><input type="checkbox" name="geo_genau" value="1" {% if o.geo_genau %}checked{% endif %}> Position ist hausgenau
+    <small class="muted">(Koordinaten z. B. per Rechtsklick in Google Maps/OpenStreetMap kopieren)</small></label>
+  <label class="span-2">Link zum Edikt<input type="url" name="edikt_url" value="{{ o.edikt_url or '' }}"></label>  <label class="span-2">Beschreibung <small>(keine Namen von Verpflichteten!)</small>
+    <textarea name="beschreibung" rows="6">{{ o.beschreibung or '' }}</textarea></label>
+  <label class="check span-2"><input type="checkbox" name="aktiv" value="1" {% if o.aktiv %}checked{% endif %}> öffentlich anzeigen</label>
+  <input type="hidden" name="rohtext" value="{{ rohtext }}">
+  <div class="span-2"><button type="submit">Speichern</button></div>
+</form>
+{% endblock %}

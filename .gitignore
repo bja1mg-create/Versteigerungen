@@ -1,0 +1,11 @@
+# Lokale Datenbank (Inhalte werden über den Import erzeugt)
+data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Lokale Einstellungen / Geheimnisse
+.env
