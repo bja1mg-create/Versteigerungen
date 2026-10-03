@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Abgleich – {{ SITE_NAME }}{% endblock %}
+{% block head %}{% if s.laeuft %}<meta http-equiv="refresh" content="5">{% endif %}{% endblock %}
+{% block content %}
+<p><a href="/admin">← Übersicht</a></p>
+<h1>Abgleich mit der Ediktsdatei</h1>
+
+<p>Holt alle aktuellen Versteigerungen aus der Ediktsdatei. Bereits bekannte Edikte werden übersprungen,
+  Verschiebungen tragen den neuen Termin ein, entfallene Termine werden ausgeblendet.
+  Der erste vollständige Lauf dauert etwa 15–25 Minuten (Abrufe werden absichtlich langsam gemacht),
+  spätere Läufe nur wenige Minuten.</p>
+<p class="muted small">
+  {% if stunden > 0 %}Automatischer Abgleich: alle {{ "%g"|format(stunden) }} Stunden
+  {%- if auswahl %} ({{ auswahl|join(", ") }}){% endif %}.{% else %}Automatischer Abgleich ist aus.{% endif %}
+  Einstellbar über <code>AUTO_SYNC_STUNDEN</code> und <code>SYNC_BUNDESLAENDER</code>.</p>
+
+{% if s.laeuft %}
+<p class="note">Abgleich läuft seit {{ s.gestartet.strftime("%H:%M:%S") }} … (Seite aktualisiert sich automatisch)</p>
+{% else %}
+<form method="post" action="/admin/abgleich" class="filter">
+  <fieldset class="span-2 bl-auswahl">
+    <legend>Bundesländer (keine Auswahl = alle)</legend>
+    {% for b in bundeslaender %}
+    <label class="check"><input type="checkbox" name="bl" value="{{ b }}"> {{ b }}</label>
+    {% endfor %}
+  </fieldset>
+  <div class="actions"><button type="submit">Abgleich jetzt starten</button></div>
+</form>
+{% if s.beendet %}<p class="muted">Letzter Lauf beendet um {{ s.beendet.strftime("%d.%m.%Y %H:%M") }}.</p>{% endif %}
+{% endif %}
+
+{% if s.log %}
+<h2>Protokoll</h2>
+<pre class="log">{% for zeile in s.log|reverse %}{{ zeile }}
+{% endfor %}</pre>
+{% endif %}
+{% endblock %}

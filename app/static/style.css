@@ -28,6 +28,16 @@ button.link { background: none; color: var(--accent); padding: 0; }
 .span-2 { grid-column: span 2; }
 @media (max-width: 480px) { .span-2 { grid-column: auto; } }
 .check { display: flex; gap: 8px; align-items: center; }
+
+.range { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 6px; }
+.range span { grid-column: 1 / -1; font-size: .8rem; color: var(--muted); }
+.filter { align-items: end; }
+
+details.multi { position: relative; }
+details.multi summary { list-style: none; cursor: pointer; padding: 8px 28px 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+details.multi summary::-webkit-details-marker { display: none; }
+details.multi summary::after { content: "▾"; position: absolute; right: 10px; color: var(--muted); }
+.multi-list { position: absolute; z-index: 1000; top: calc(100% + 4px); left: 0; min-width: 100%; width: max-content; max-width: min(360px, 90vw); max-height: 320px; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: 8px 12px; display: grid; gap: 4px; }
 .check input { width: auto; }
 .actions { display: flex; gap: 12px; align-items: center; }
 .count { color: var(--muted); }
@@ -67,6 +77,10 @@ button.secondary { background: var(--accent-soft); color: var(--accent); }
 .popup .muted { font-size: .85em; }
 .leaflet-tooltip.count-badge { background: var(--accent); color: #fff; border: 0; border-radius: 99px; padding: 0 7px; font-weight: 700; box-shadow: none; }
 .leaflet-tooltip.count-badge::before { display: none; }
+
+.bl-auswahl { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.bl-auswahl legend { padding: 0; margin-bottom: 6px; font-size: .9rem; }
+.log { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; font-size: .8rem; max-height: 60vh; overflow: auto; white-space: pre-wrap; }
 
 .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
 table { border-collapse: collapse; width: 100%; font-size: .9rem; }

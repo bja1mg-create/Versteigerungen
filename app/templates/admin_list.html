@@ -4,7 +4,8 @@
 <h1>Verwaltung</h1>
 {% if meldung %}<p class="note">{{ meldung }}</p>{% endif %}
 <div class="buttons">
-  <a class="button" href="/admin/import">Edikte importieren</a>
+  <a class="button" href="/admin/abgleich">Abgleich mit Ediktsdatei</a>
+  <a class="button secondary" href="/admin/import">Links importieren</a>
   <a class="button secondary" href="/admin/neu">+ Manuell anlegen</a>
   {% if ohne_koordinaten %}
   <form method="post" action="/admin/geocode">

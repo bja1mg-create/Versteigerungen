@@ -4,13 +4,13 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlencode
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
+from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import db, importer
+from . import db, importer, sync
 from .geocode import geocode_sicher
 from .parser import parse_eur, parse_edikt
 
@@ -59,6 +59,9 @@ templates.env.globals.update(
 @app.on_event("startup")
 def startup():
     db.init_db()
+    stunden = float(os.environ.get("AUTO_SYNC_STUNDEN", "24"))
+    if stunden > 0:
+        sync.starte_zeitplan(stunden)
 
 
 def require_admin(credentials: HTTPBasicCredentials = Depends(security)):
@@ -83,18 +86,20 @@ def _num(value):
 class Filter:
     """Gemeinsame Such-Parameter für Liste und Karte."""
 
-    def __init__(self, q: str = "", bundesland: str = "", objektart: str = "",
-                 preis_min: str = "", preis_max: str = "", flaeche_min: str = "",
-                 vergangene: str = "", sort: str = "termin"):
-        self.f = dict(q=q, bundesland=bundesland, objektart=objektart, preis_min=preis_min,
-                      preis_max=preis_max, flaeche_min=flaeche_min, vergangene=vergangene, sort=sort)
+    def __init__(self, q: str = "", bundesland: str = "", objektart: list[str] = Query([]),
+                 preis_min: str = "", preis_max: str = "", gebot_min: str = "", gebot_max: str = "",
+                 flaeche_min: str = "", vergangene: str = "", sort: str = "termin"):
+        self.f = dict(q=q, bundesland=bundesland, objektart=[o for o in objektart if o],
+                      preis_min=preis_min, preis_max=preis_max, gebot_min=gebot_min,
+                      gebot_max=gebot_max, flaeche_min=flaeche_min, vergangene=vergangene, sort=sort)
 
     def context(self, request):
         f = self.f
         objekte = db.search(
             q=f["q"].strip() or None, bundesland=f["bundesland"] or None,
-            objektart=f["objektart"] or None, preis_min=_num(f["preis_min"]),
-            preis_max=_num(f["preis_max"]), flaeche_min=_num(f["flaeche_min"]),
+            objektarten=f["objektart"], preis_min=_num(f["preis_min"]),
+            preis_max=_num(f["preis_max"]), gebot_min=_num(f["gebot_min"]),
+            gebot_max=_num(f["gebot_max"]), flaeche_min=_num(f["flaeche_min"]),
             nur_kommende=not f["vergangene"], sort=f["sort"],
             now_iso=datetime.now().strftime("%Y-%m-%dT%H:%M"),
         )
@@ -213,6 +218,23 @@ async def admin_save(request: Request, _=Depends(require_admin)):
     else:
         db.insert(data)
     return RedirectResponse("/admin", status_code=303)
+
+
+@app.get("/admin/abgleich", response_class=HTMLResponse)
+def admin_sync_status(request: Request, _=Depends(require_admin)):
+    return templates.TemplateResponse(request, "admin_sync.html", {
+        "s": sync.status, "bundeslaender": list(sync.BL_CODES),
+        "auswahl": sync.konfigurierte_bundeslaender() or [],
+        "stunden": float(os.environ.get("AUTO_SYNC_STUNDEN", "24")),
+    })
+
+
+@app.post("/admin/abgleich")
+async def admin_sync_start(request: Request, _=Depends(require_admin)):
+    form = await request.form()
+    auswahl = [b for b in form.getlist("bl") if b in sync.BL_CODES] or None
+    sync.starte_im_hintergrund(auswahl)
+    return RedirectResponse("/admin/abgleich", status_code=303)
 
 
 @app.get("/admin/import", response_class=HTMLResponse)

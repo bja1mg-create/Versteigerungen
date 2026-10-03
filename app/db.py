@@ -57,6 +57,13 @@ CREATE TABLE IF NOT EXISTS objekte (
 );
 CREATE INDEX IF NOT EXISTS idx_objekte_termin ON objekte(termin);
 CREATE INDEX IF NOT EXISTS idx_objekte_bundesland ON objekte(bundesland);
+-- Bereits verarbeitete Edikte (alle Arten), damit sie beim Abgleich nicht erneut abgerufen werden.
+CREATE TABLE IF NOT EXISTS edikte_gesehen (
+    edikt_id    TEXT PRIMARY KEY,
+    art         TEXT,
+    ergebnis    TEXT,
+    gesehen_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
 
 
@@ -103,8 +110,9 @@ SORTS = {
 }
 
 
-def search(q=None, bundesland=None, objektart=None, preis_min=None, preis_max=None,
-           flaeche_min=None, nur_kommende=True, sort="termin", now_iso=None):
+def search(q=None, bundesland=None, objektarten=None, preis_min=None, preis_max=None,
+           gebot_min=None, gebot_max=None, flaeche_min=None, nur_kommende=True, sort="termin",
+           now_iso=None):
     where, params = ["aktiv = 1"], []
     if q:
         where.append("(aktenzeichen LIKE ? OR ort LIKE ? OR plz LIKE ? OR adresse LIKE ?"
@@ -113,15 +121,14 @@ def search(q=None, bundesland=None, objektart=None, preis_min=None, preis_max=No
     if bundesland:
         where.append("bundesland = ?")
         params.append(bundesland)
-    if objektart:
-        where.append("objektart = ?")
-        params.append(objektart)
-    if preis_min is not None:
-        where.append("schaetzwert >= ?")
-        params.append(preis_min)
-    if preis_max is not None:
-        where.append("schaetzwert <= ?")
-        params.append(preis_max)
+    if objektarten:
+        where.append(f"objektart IN ({', '.join('?' * len(objektarten))})")
+        params += objektarten
+    for spalte, op, wert in (("schaetzwert", ">=", preis_min), ("schaetzwert", "<=", preis_max),
+                             ("geringstes_gebot", ">=", gebot_min), ("geringstes_gebot", "<=", gebot_max)):
+        if wert is not None:
+            where.append(f"{spalte} {op} ?")
+            params.append(wert)
     if flaeche_min is not None:
         where.append("flaeche >= ?")
         params.append(flaeche_min)
@@ -137,6 +144,27 @@ def search(q=None, bundesland=None, objektart=None, preis_min=None, preis_max=No
 def ohne_koordinaten():
     with connect() as conn:
         return conn.execute("SELECT * FROM objekte WHERE lat IS NULL OR lon IS NULL").fetchall()
+
+
+def passende_objekte(aktenzeichen, adresse, plz):
+    """Objekte zum selben Verfahren an derselben Adresse (für Verschiebung/Entfall)."""
+    with connect() as conn:
+        return conn.execute(
+            "SELECT * FROM objekte WHERE aktenzeichen = ? AND IFNULL(adresse, '') = IFNULL(?, '')"
+            " AND IFNULL(plz, '') = IFNULL(?, '')", (aktenzeichen, adresse, plz)).fetchall()
+
+
+def gesehene_ids():
+    with connect() as conn:
+        ids = {r[0] for r in conn.execute("SELECT edikt_id FROM edikte_gesehen")}
+        ids |= {r[0] for r in conn.execute("SELECT edikt_id FROM objekte WHERE edikt_id IS NOT NULL")}
+        return ids
+
+
+def als_gesehen_markieren(edikt_id, art, ergebnis):
+    with connect() as conn:
+        conn.execute("INSERT OR REPLACE INTO edikte_gesehen (edikt_id, art, ergebnis) VALUES (?, ?, ?)",
+                     (edikt_id, art, ergebnis))
 
 
 def get(objekt_id):

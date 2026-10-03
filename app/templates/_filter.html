@@ -9,12 +9,28 @@
     <option value="">Alle Bundesländer</option>
     {% for b in BUNDESLAENDER %}<option {% if f.bundesland == b %}selected{% endif %}>{{ b }}</option>{% endfor %}
   </select>
-  <select name="objektart">
-    <option value="">Alle Objektarten</option>
-    {% for o in objektarten %}<option {% if f.objektart == o %}selected{% endif %}>{{ o }}</option>{% endfor %}
-  </select>
-  <input type="text" inputmode="numeric" name="preis_min" value="{{ f.preis_min }}" placeholder="Schätzwert ab €">
-  <input type="text" inputmode="numeric" name="preis_max" value="{{ f.preis_max }}" placeholder="Schätzwert bis €">
+  <details class="multi">
+    <summary>
+      {%- if not f.objektart %}Alle Objektarten
+      {%- elif f.objektart|length == 1 %}{{ f.objektart[0] }}
+      {%- else %}{{ f.objektart|length }} Objektarten{% endif -%}
+    </summary>
+    <div class="multi-list">
+      {% for o in objektarten %}
+      <label class="check"><input type="checkbox" name="objektart" value="{{ o }}" {% if o in f.objektart %}checked{% endif %}> {{ o }}</label>
+      {% endfor %}
+    </div>
+  </details>
+  <div class="range">
+    <span>Schätzwert €</span>
+    <input type="text" inputmode="numeric" name="preis_min" value="{{ f.preis_min }}" placeholder="von" aria-label="Schätzwert von">
+    <input type="text" inputmode="numeric" name="preis_max" value="{{ f.preis_max }}" placeholder="bis" aria-label="Schätzwert bis">
+  </div>
+  <div class="range">
+    <span>Geringstes Gebot €</span>
+    <input type="text" inputmode="numeric" name="gebot_min" value="{{ f.gebot_min }}" placeholder="von" aria-label="Geringstes Gebot von">
+    <input type="text" inputmode="numeric" name="gebot_max" value="{{ f.gebot_max }}" placeholder="bis" aria-label="Geringstes Gebot bis">
+  </div>
   <input type="text" inputmode="numeric" name="flaeche_min" value="{{ f.flaeche_min }}" placeholder="Fläche ab m²">
   <select name="sort">
     <option value="termin" {% if f.sort == 'termin' %}selected{% endif %}>Nächster Termin zuerst</option>
@@ -25,3 +41,9 @@
   <label class="check"><input type="checkbox" name="vergangene" value="1" {% if f.vergangene %}checked{% endif %}> vergangene Termine zeigen</label>
   <div class="actions"><button type="submit">Suchen</button> <a href="{{ '/karte' if ansicht == 'karte' else '/' }}">Zurücksetzen</a></div>
 </form>
+<script>
+  // Objektart-Auswahl schließen, wenn außerhalb geklickt wird
+  document.addEventListener("click", (e) => {
+    document.querySelectorAll("details.multi[open]").forEach((d) => { if (!d.contains(e.target)) d.open = false; });
+  });
+</script>

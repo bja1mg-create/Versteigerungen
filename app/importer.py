@@ -83,22 +83,28 @@ def bundesland_aus_plz(plz):
     return None
 
 
-def parse_detail(page):
+ARTEN_PREFIX = r"^(?:Versteigerung|Verschiebung|Entfall des Termins|Zuschlag \w+ Überbot|Meistbotsverteilung)\s*(?:-\s*)?"
+
+
+def felder(page):
+    """Alle 'Bezeichnung: Wert'-Zeilen einer Detailseite plus Titel (ohne Edikt-Art)."""
     rows = {}
     for label, value in ROW_RE.findall(page):
-        label = _text(label)
-        rows.setdefault(label, _text(value))
-
+        rows.setdefault(_text(label), _text(value))
     titel = re.search(r'class="page-header[^"]*"><h1><small>(.*?)</small>', page, re.S)
-    titel = _text(titel.group(1)) if titel else ""
-    titel = re.sub(r"^Versteigerung\s*-\s*", "", titel)
+    titel = re.sub(ARTEN_PREFIX, "", _text(titel.group(1)) if titel else "")
+    return rows, titel
+
+
+def parse_detail(page):
+    rows, titel = felder(page)
 
     data = {
         "titel": titel or None,
         "gericht": re.sub(r"\s*\(\d+\)\s*$", "", rows.get("Dienststelle", "")) or None,
         "aktenzeichen": rows.get("Aktenzeichen"),
-        "termin": _termin(rows.get("Versteigerungstermin")),
-        "termin_ort": rows.get("Versteigerungsort"),
+        "termin": _termin(rows.get("Versteigerungstermin") or rows.get("Neuer Versteigerungstermin")),
+        "termin_ort": rows.get("Versteigerungsort") or rows.get("Neuer Ort"),
         "bekannt_gemacht": _datum(rows.get("Bekannt gemacht am")),
         "adresse": rows.get("Liegenschaftsadresse"),
         "objektart": rows.get("Kategorie(n)"),
@@ -126,36 +132,38 @@ def parse_detail(page):
     return {k: v for k, v in data.items() if v not in (None, "")}
 
 
+def import_edikt(edikt_id, page=None):
+    """Ein Versteigerungsedikt abrufen und anlegen/aktualisieren -> (status, info)."""
+    url = edikt_url(edikt_id)
+    try:
+        data = parse_detail(page if page is not None else fetch(url))
+    except Exception as exc:  # Netzwerk-/Parsefehler pro Edikt melden, Rest weiter importieren
+        return "Fehler", str(exc)
+    if not data.get("aktenzeichen"):
+        return "Fehler", "Kein Aktenzeichen gefunden – Seite anders aufgebaut?"
+    data.update(edikt_url=url, edikt_id=edikt_id)
+    info = f"{data['aktenzeichen']} · {data.get('plz', '')} {data.get('ort', '')} · {data.get('titel', '')}"
+    existing = db.get_by_edikt_id(edikt_id)
+    adresse_neu = not existing or existing["lat"] is None or any(
+        existing[k] != data.get(k) for k in ("adresse", "plz", "ort"))
+    if adresse_neu:
+        data.update(geocode_sicher(data))
+        if "lat" not in data:
+            info += " · ohne Kartenposition"
+    if existing:
+        db.update(existing["id"], data)  # 'aktiv' bleibt, wie im Admin gesetzt
+        return "aktualisiert", info
+    db.insert({**data, "aktiv": 1})
+    return "neu", info
+
+
 def import_ids(ids, pause=1.0):
     """Liefert Liste von (edikt_id, status, info)."""
     results = []
     for i, edikt_id in enumerate(ids):
         if i:
             time.sleep(pause)  # Server der Justiz schonen
-        url = edikt_url(edikt_id)
-        try:
-            data = parse_detail(fetch(url))
-        except Exception as exc:  # Netzwerk-/Parsefehler pro Edikt melden, Rest weiter importieren
-            results.append((edikt_id, "Fehler", str(exc)))
-            continue
-        if not data.get("aktenzeichen"):
-            results.append((edikt_id, "Fehler", "Kein Aktenzeichen gefunden – Seite anders aufgebaut?"))
-            continue
-        data.update(edikt_url=url, edikt_id=edikt_id)
-        info = f"{data['aktenzeichen']} · {data.get('plz', '')} {data.get('ort', '')} · {data.get('titel', '')}"
-        existing = db.get_by_edikt_id(edikt_id)
-        adresse_neu = not existing or existing["lat"] is None or any(
-            existing[k] != data.get(k) for k in ("adresse", "plz", "ort"))
-        if adresse_neu:
-            data.update(geocode_sicher(data))
-            if "lat" not in data:
-                info += " · ohne Kartenposition"
-        if existing:
-            db.update(existing["id"], data)  # 'aktiv' bleibt, wie im Admin gesetzt
-            results.append((edikt_id, "aktualisiert", info))
-        else:
-            db.insert({**data, "aktiv": 1})
-            results.append((edikt_id, "neu", info))
+        results.append((edikt_id, *import_edikt(edikt_id)))
     return results
 
 
