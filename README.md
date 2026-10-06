@@ -58,6 +58,7 @@ Alternativ per Kommandozeile: `python -m app.importer liste.txt`
 | `AUTO_SYNC_STUNDEN` | Intervall für den automatischen Abgleich (Standard `24`, `0` = aus) |
 | `SYNC_BUNDESLAENDER` | Nur diese Bundesländer abgleichen (kommagetrennt) |
 | `GEOCODER_USER_AGENT` | Kennung für Nominatim, z. B. `meine-seite.at (kontakt@…)` |
+| `TILE_URL`, `TILE_ATTRIBUTION` | Kartenkacheln (Standard: basemap.at, frei nutzbar, CC BY 4.0) |
 
 ## In GitHub Codespaces ausprobieren
 

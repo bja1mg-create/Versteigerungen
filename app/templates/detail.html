@@ -47,10 +47,7 @@
 <script>
   const pos = [{{ o.lat }}, {{ o.lon }}];
   const map = L.map("map", { scrollWheelZoom: false }).setView(pos, {{ 16 if o.geo_genau else 13 }});
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
-  }).addTo(map);
+  L.tileLayer({{ TILE_URL|tojson }}, { maxZoom: 19, attribution: {{ TILE_ATTRIBUTION|tojson }} }).addTo(map);
   L.marker(pos, { opacity: {{ 1 if o.geo_genau else 0.55 }} }).addTo(map);
 </script>
 {% endif %}

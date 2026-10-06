@@ -16,10 +16,7 @@
 <script>
   const punkte = {{ punkte|tojson }};
   const map = L.map("map", { scrollWheelZoom: false });
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
-  }).addTo(map);
+  L.tileLayer({{ TILE_URL|tojson }}, { maxZoom: 19, attribution: {{ TILE_ATTRIBUTION|tojson }} }).addTo(map);
   map.on("focus", () => map.scrollWheelZoom.enable());
 
   // Mehrere Objekte an derselben Adresse -> ein Marker mit allen Objekten im Popup.

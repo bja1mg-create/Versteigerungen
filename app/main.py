@@ -53,6 +53,12 @@ templates.env.globals.update(
     BUNDESLAENDER=db.BUNDESLAENDER,
     OBJEKTARTEN=db.OBJEKTARTEN,
     IMPRESSUM=os.environ.get("IMPRESSUM", ""),
+    # Kartenkacheln: Standard basemap.at (Verwaltungsgrundkarte Österreich, CC BY 4.0,
+    # auch kommerziell frei). Die OSM-Server blockieren Websites mit 403 (Tile Usage Policy).
+    TILE_URL=os.environ.get(
+        "TILE_URL", "https://mapsneu.wien.gv.at/basemap/geolandbasemap/normal/google3857/{z}/{y}/{x}.png"),
+    TILE_ATTRIBUTION=os.environ.get(
+        "TILE_ATTRIBUTION", 'Datenquelle: <a href="https://www.basemap.at">basemap.at</a>'),
 )
 
 
