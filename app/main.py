@@ -10,7 +10,8 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import db, importer, sync
+from . import db, importer, mailer, sync
+from .formatierung import datum, eur, m2
 from .geocode import geocode_sicher
 from .parser import parse_eur, parse_edikt
 
@@ -21,28 +22,6 @@ app = FastAPI(title=SITE_NAME, docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
 templates = Jinja2Templates(directory=BASE / "templates")
 security = HTTPBasic()
-
-
-def eur(value):
-    if value is None:
-        return "–"
-    return "€ " + f"{value:,.0f}".replace(",", ".")
-
-
-def datum(value):
-    if not value:
-        return "–"
-    try:
-        dt = datetime.fromisoformat(value)
-    except ValueError:
-        return value
-    return dt.strftime("%d.%m.%Y, %H:%M Uhr") if dt.hour or dt.minute else dt.strftime("%d.%m.%Y")
-
-
-def m2(value):
-    if value is None:
-        return "–"
-    return f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".").removesuffix(",00") + " m²"
 
 
 templates.env.filters["eur"] = eur
@@ -227,12 +206,23 @@ async def admin_save(request: Request, _=Depends(require_admin)):
 
 
 @app.get("/admin/abgleich", response_class=HTMLResponse)
-def admin_sync_status(request: Request, _=Depends(require_admin)):
+def admin_sync_status(request: Request, meldung: str = "", _=Depends(require_admin)):
     return templates.TemplateResponse(request, "admin_sync.html", {
         "s": sync.status, "bundeslaender": list(sync.BL_CODES),
         "auswahl": sync.konfigurierte_bundeslaender() or [],
         "stunden": float(os.environ.get("AUTO_SYNC_STUNDEN", "24")),
+        "mail_aktiv": mailer.konfiguriert(), "mail_an": mailer.empfaenger(), "meldung": meldung,
     })
+
+
+@app.post("/admin/testmail")
+def admin_testmail(_=Depends(require_admin)):
+    try:
+        n = mailer.testmail()
+        meldung = f"Testmail mit {n} Objekten an {', '.join(mailer.empfaenger())} gesendet."
+    except Exception as exc:
+        meldung = f"Testmail fehlgeschlagen: {exc}"
+    return RedirectResponse("/admin/abgleich?" + urlencode({"meldung": meldung}), status_code=303)
 
 
 @app.post("/admin/abgleich")

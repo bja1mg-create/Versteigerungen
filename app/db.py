@@ -32,6 +32,7 @@ COORD_FIELDS = ("lat", "lon")
 MIGRATIONS = {
     "titel": "TEXT", "grundflaeche": "REAL", "vadium": "REAL", "bekannt_gemacht": "TEXT",
     "edikt_id": "TEXT", "lat": "REAL", "lon": "REAL", "geo_genau": "INTEGER",
+    "gemeldet_at": "TEXT",
 }
 
 SCHEMA = """
@@ -86,6 +87,9 @@ def init_db():
         for col, typ in MIGRATIONS.items():
             if col not in existing:
                 conn.execute(f"ALTER TABLE objekte ADD COLUMN {col} {typ}")
+                if col == "gemeldet_at":
+                    # Beim Einführen des Mailversands gelten vorhandene Objekte als bereits gemeldet.
+                    conn.execute("UPDATE objekte SET gemeldet_at = datetime('now')")
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_objekte_edikt_id ON objekte(edikt_id)")
 
 
@@ -139,6 +143,20 @@ def search(q=None, bundesland=None, objektarten=None, preis_min=None, preis_max=
     sql = f"SELECT * FROM objekte WHERE {' AND '.join(where)} ORDER BY {order}"
     with connect() as conn:
         return conn.execute(sql, params).fetchall()
+
+
+def ungemeldet(now_iso):
+    """Aktive Objekte mit kommendem Termin, die noch in keiner Benachrichtigung waren."""
+    with connect() as conn:
+        return conn.execute(
+            "SELECT * FROM objekte WHERE gemeldet_at IS NULL AND aktiv = 1"
+            " AND (termin IS NULL OR termin >= ?) ORDER BY bundesland, termin", (now_iso,)).fetchall()
+
+
+def als_gemeldet_markieren(ids):
+    with connect() as conn:
+        conn.executemany("UPDATE objekte SET gemeldet_at = datetime('now') WHERE id = ?",
+                         [(i,) for i in ids])
 
 
 def ohne_koordinaten():

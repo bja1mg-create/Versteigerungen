@@ -19,7 +19,7 @@ import time
 import urllib.parse
 from datetime import datetime
 
-from . import db
+from . import db, mailer
 from .importer import HOST, _termin, _text, edikt_url, felder, fetch, import_edikt
 
 SUCH_URL = (HOST + "/edikte/ex/exedi3.nsf/suchedi?SearchView&subf=eex&SearchOrder=4"
@@ -149,6 +149,7 @@ def starte_im_hintergrund(bundeslaender=None):
         try:
             status.ergebnis = abgleich(bundeslaender, log=status.schreiben)
             status.schreiben("Fertig: " + ", ".join(f"{k} {v}" for k, v in status.ergebnis.items()))
+            mailer.neue_melden(log=status.schreiben)
         except Exception as exc:
             status.schreiben(f"Abgebrochen: {exc}")
         finally:
@@ -181,3 +182,4 @@ if __name__ == "__main__":
     print(f"Abgleich startet {datetime.now():%d.%m.%Y %H:%M} – {', '.join(auswahl or BL_CODES)}")
     ergebnis = abgleich(auswahl)
     print("Fertig:", ergebnis)
+    mailer.neue_melden()

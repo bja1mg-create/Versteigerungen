@@ -14,6 +14,18 @@
   {%- if auswahl %} ({{ auswahl|join(", ") }}){% endif %}.{% else %}Automatischer Abgleich ist aus.{% endif %}
   Einstellbar über <code>AUTO_SYNC_STUNDEN</code> und <code>SYNC_BUNDESLAENDER</code>.</p>
 
+{% if meldung %}<p class="note">{{ meldung }}</p>{% endif %}
+
+<h2>E-Mail-Benachrichtigung</h2>
+{% if mail_aktiv %}
+<p>Nach jedem Abgleich werden neue Versteigerungen an <strong>{{ mail_an|join(", ") }}</strong> geschickt.</p>
+<form method="post" action="/admin/testmail"><button class="secondary" type="submit">Testmail senden</button></form>
+{% else %}
+<p class="muted">Nicht eingerichtet – <code>SMTP_HOST</code>, <code>SMTP_USER</code>, <code>SMTP_PASSWORD</code>
+  und <code>MAIL_TO</code> in der Datei <code>.env</code> setzen (Vorlage: <code>.env.example</code>).</p>
+{% endif %}
+
+<h2>Abgleich</h2>
 {% if s.laeuft %}
 <p class="note">Abgleich läuft seit {{ s.gestartet.strftime("%H:%M:%S") }} … (Seite aktualisiert sich automatisch)</p>
 {% else %}

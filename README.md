@@ -31,6 +31,16 @@ Die App durchsucht die Ediktsdatei selbst (alle Bundesländer) und verarbeitet n
 - Nur bestimmte Bundesländer: `SYNC_BUNDESLAENDER=Wien,Niederösterreich`.
 - Abrufe sind absichtlich gedrosselt (1 Sekunde Pause, `SYNC_PAUSE`); der erste Lauf für ganz Österreich dauert ca. 15–25 Minuten.
 
+## E-Mail mit neuen Versteigerungen
+
+Nach jedem Abgleich geht eine Mail mit allen neu dazugekommenen Versteigerungen
+(österreichweit) an die Empfänger in `MAIL_TO`. Ohne Neues wird nichts verschickt;
+schlägt der Versand fehl, wird er beim nächsten Abgleich nachgeholt.
+
+1. `.env.example` nach `.env` kopieren und SMTP-Daten + `MAIL_TO` eintragen
+   (Gmail: App-Passwort verwenden, siehe Kommentar in der Datei).
+2. Testen: Admin → Abgleich → **Testmail senden**, oder `python -m app.mailer --test`.
+
 ## Edikte per Link importieren
 
 1. In der Ediktsdatei suchen, die Ergebnisliste (oder einzelne Edikt-Links) kopieren.
